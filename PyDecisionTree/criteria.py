@@ -11,7 +11,7 @@ class Criteria(ABC):
         """
         Computes the specific criteria value for a given split.
 
-        This criteria value can be used to evaluate the split of
+        These criteria value can be used to evaluate the split of
         a dataset in combination with the Information Gain.
 
         Args:

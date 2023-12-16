@@ -98,7 +98,7 @@ class Entropy(Criteria):
 
 class LogLoss(Criteria):
     def _call(self, X: np.ndarray, y: np.ndarray) -> float:
-        # TODO: Implement here + Unittests
+        # TODO: Implement here + Unittests + Documentation
         """
         y_mode = scipy.stats.mode(y)[0]
         count = np.count_nonzero(y == y_mode)

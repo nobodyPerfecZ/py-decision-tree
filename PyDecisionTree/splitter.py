@@ -128,7 +128,7 @@ class InformationGain(Splitter):
         E = self.criteria(X_parent, y_parent)
         E1 = self.criteria(X_left, y_left)
         E2 = self.criteria(X_right, y_right)
-        return -(N * E - (N1 * E1) - (N2 * E2) / N)
+        return -((N * E - (N1 * E1) - (N2 * E2)) / N)
 
 
 class WeightedLoss(Splitter):

@@ -11,9 +11,8 @@ from PyDecisionTree.splitter import Splitter, InformationGain, WeightedLoss
 
 class DecisionTree(ABC):
     """
-    Implementation of a Decision Tree (either for classification
-    or regression) based on the Continuous And Regression Trees
-    (CART) algorithm.
+    Implementation of a Decision Tree (either for classification or regression) based on the
+    Continuous And Regression Tree (CART) algorithm.
 
     See more information about CART here:
     https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier
@@ -47,6 +46,10 @@ class DecisionTree(ABC):
             The minimum number of samples needed to generate a new decision node.
             It is used for regularization and prevents from overfitting.
 
+        min_samples_leaf (int, optional):
+            The minimum number of samples needed to generate new child nodes.
+            It is used for regularization and prevents from overfitting.
+
         random_state (int, optional):
             The seed for the random number generator (used for reproducibility).
     """
@@ -59,6 +62,7 @@ class DecisionTree(ABC):
             max_features: str,
             max_depth: Optional[int] = None,
             min_samples_split: int = 2,
+            min_samples_leaf: int = 1,
             random_state: Optional[int] = None,
     ):
         self._tree_type = self._get_tree_type(tree_type)
@@ -67,6 +71,7 @@ class DecisionTree(ABC):
         self._max_features = self._get_max_features(max_features)
         self._max_depth = self._get_max_depth(max_depth)
         self._min_samples_split = self._get_min_samples_split(min_samples_split)
+        self._min_samples_leaf = self._get_min_samples_leaf(min_samples_leaf)
         self._rng = np.random.RandomState(random_state)
 
         # Attributes that gets initialized after using .fit() method
@@ -112,6 +117,7 @@ class DecisionTree(ABC):
                 # Split the data into the given question
                 question = Question(column, value)
                 X_left, y_left, X_right, y_right = question.partition(X, y)
+
                 if len(X_left) == 0 or len(y_left) == 0 or len(X_right) == 0 or len(y_right) == 0:
                     # Case: Skip this split if it does not divide the dataset
                     continue
@@ -147,7 +153,6 @@ class DecisionTree(ABC):
             Node:
                 The root node of the decision tree
         """
-        # self._min_samples_leaf = self._get_min_samples_leaf(min_samples_leaf)
         if len(np.unique(y)) == 1:
             # Case: No further splits are necessary:
             return LeafNode(X=X, y=y)
@@ -169,6 +174,10 @@ class DecisionTree(ABC):
 
         # Split the data
         X_left, y_left, X_right, y_right = question.partition(X, y)
+
+        if len(X_left) < self._min_samples_leaf or len(y_left) < self._min_samples_leaf or \
+                len(X_right) < self._min_samples_leaf or len(y_right) < self._min_samples_leaf:
+            return LeafNode(X=X, y=y)
 
         # Recursively build the left branch
         branch_left = self._fit(X_left, y_left, depth + 1)
@@ -318,6 +327,10 @@ class DecisionTree(ABC):
         assert min_samples_split >= 2, f"Illegal min_samples_split {min_samples_split}! The argument should be >= 2!"
         return min_samples_split
 
+    def _get_min_samples_leaf(self, min_samples_leaf: int) -> int:
+        assert min_samples_leaf >= 1, f"Illegal min_samples_leaf {min_samples_leaf}! The argument should be >= 1!"
+        return min_samples_leaf
+
     def _print_tree(self, node: Node, spacing: str = ""):
         """
         Prints the current node and its left and right neighbors if they exists.
@@ -383,6 +396,10 @@ class DecisionTreeClassifier(DecisionTree):
             The minimum number of samples needed to generate a new decision node.
             It is used for regularization and prevents from overfitting.
 
+        min_samples_leaf (int, optional):
+            The minimum number of samples needed to generate new child nodes.
+            It is used for regularization and prevents from overfitting.
+
         random_state (int, optional):
             The seed for the random number generator (used for reproducibility).
     """
@@ -394,6 +411,7 @@ class DecisionTreeClassifier(DecisionTree):
             max_features: str = "all",
             max_depth: Optional[int] = None,
             min_samples_split: int = 2,
+            min_samples_leaf: int = 1,
             random_state: Optional[int] = None,
     ):
         super().__init__(
@@ -403,6 +421,7 @@ class DecisionTreeClassifier(DecisionTree):
             max_features,
             max_depth,
             min_samples_split,
+            min_samples_leaf,
             random_state
         )
 
@@ -467,6 +486,10 @@ class DecisionTreeRegressor(DecisionTree):
             The minimum number of samples needed to generate a new decision node.
             It is used for regularization and prevents from overfitting.
 
+        min_samples_leaf (int, optional):
+            The minimum number of samples needed to generate new child nodes.
+            It is used for regularization and prevents from overfitting.
+
         random_state (int, optional):
             The seed for the random number generator (used for reproducibility).
     """
@@ -478,6 +501,7 @@ class DecisionTreeRegressor(DecisionTree):
             max_features: str = "all",
             max_depth: Optional[int] = None,
             min_samples_split: int = 2,
+            min_samples_leaf: int = 1,
             random_state: Optional[int] = None,
     ):
         super().__init__(
@@ -487,6 +511,7 @@ class DecisionTreeRegressor(DecisionTree):
             max_features,
             max_depth,
             min_samples_split,
+            min_samples_leaf,
             random_state,
         )
 

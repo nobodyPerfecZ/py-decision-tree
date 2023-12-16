@@ -3,7 +3,6 @@ import unittest
 import numpy as np
 
 from PyDecisionTree.model import DecisionTreeClassifier, DecisionTreeRegressor
-from PyDecisionTree.question import Question
 
 
 class TestDecisionTreeClassifier(unittest.TestCase):

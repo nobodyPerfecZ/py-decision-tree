@@ -39,6 +39,14 @@ class DecisionTree(ABC):
             The string argument to differentiate between different number of
             features to look for finding the best splits.
 
+        max_depth (int, optional):
+            The maximum depth of the decision tree. It is used for regularization
+            and prevents from overfitting.
+
+        min_samples_split (int, optional):
+            The minimum number of samples needed to generate a new decision node.
+            It is used for regularization and prevents from overfitting.
+
         random_state (int, optional):
             The seed for the random number generator (used for reproducibility).
     """
@@ -49,12 +57,16 @@ class DecisionTree(ABC):
             splitter: str,
             strategy: str,
             max_features: str,
+            max_depth: Optional[int] = None,
+            min_samples_split: int = 2,
             random_state: Optional[int] = None,
     ):
         self._tree_type = self._get_tree_type(tree_type)
         self._splitter = self._get_splitter(splitter)
         self._strategy = self._get_strategy(strategy)
         self._max_features = self._get_max_features(max_features)
+        self._max_depth = self._get_max_depth(max_depth)
+        self._min_samples_split = self._get_min_samples_split(min_samples_split)
         self._rng = np.random.RandomState(random_state)
 
         # Attributes that gets initialized after using .fit() method
@@ -100,7 +112,7 @@ class DecisionTree(ABC):
                 # Split the data into the given question
                 question = Question(column, value)
                 X_left, y_left, X_right, y_right = question.partition(X, y)
-                if len(X_left) == 0 or len(y_left) == 0 or len(X_right) == 0 or len(y_left) == 0:
+                if len(X_left) == 0 or len(y_left) == 0 or len(X_right) == 0 or len(y_right) == 0:
                     # Case: Skip this split if it does not divide the dataset
                     continue
 
@@ -120,7 +132,7 @@ class DecisionTree(ABC):
                         best_question = question
         return best_question, best_loss
 
-    def _fit(self, X: np.ndarray, y: np.ndarray) -> Node:
+    def _fit(self, X: np.ndarray, y: np.ndarray, depth: int = 0) -> Node:
         """
         Returns the root of the decision tree.
 
@@ -135,6 +147,19 @@ class DecisionTree(ABC):
             Node:
                 The root node of the decision tree
         """
+        # self._min_samples_leaf = self._get_min_samples_leaf(min_samples_leaf)
+        if len(np.unique(y)) == 1:
+            # Case: No further splits are necessary:
+            return LeafNode(X=X, y=y)
+
+        if self._max_depth is not None and self._max_depth == depth:
+            # Case: Maximum depth is reached
+            return LeafNode(X=X, y=y)
+
+        if self._min_samples_split > len(y):
+            # Case: Has less than minimum number of splits
+            return LeafNode(X=X, y=y)
+
         # Find the best split of the current data
         question, loss = self._find_best_split(X, y)
 
@@ -146,10 +171,10 @@ class DecisionTree(ABC):
         X_left, y_left, X_right, y_right = question.partition(X, y)
 
         # Recursively build the left branch
-        branch_left = self._fit(X_left, y_left)
+        branch_left = self._fit(X_left, y_left, depth + 1)
 
         # Recursively build the right branch
-        branch_right = self._fit(X_right, y_right)
+        branch_right = self._fit(X_right, y_right, depth + 1)
 
         return DecisionNode(question, branch_left, branch_right)
 
@@ -262,24 +287,69 @@ class DecisionTree(ABC):
             raise ValueError("Unknown max_features {max_features}!")
         return max_features_wrapper[max_features]
 
-    def print_tree(self, node, spacing=""):
-        """World's most elegant tree printing function."""
+    def _get_max_depth(self, max_depth: Optional[int]) -> Optional[int]:
+        """
+        Returns the max_depth of the decision tree, according to the given argument.
 
+        Args:
+            max_depth (int):
+                The argument we want to check
+
+        Returns:
+            Optional[int]:
+                The max_depth of the decision tree
+        """
+        assert max_depth is None or max_depth >= 1, \
+            f"Illegal max_depth {max_depth}! The argument should be None or >= 1!"
+        return max_depth
+
+    def _get_min_samples_split(self, min_samples_split: int) -> int:
+        """
+        Returns the min_samples_split of the decision tree, according to the given argument.
+
+        Args:
+            min_samples_split (int):
+                The argument we want to check.
+
+        Returns:
+            int:
+                The min_samples_split of the decision tree
+        """
+        assert min_samples_split >= 2, f"Illegal min_samples_split {min_samples_split}! The argument should be >= 2!"
+        return min_samples_split
+
+    def _print_tree(self, node: Node, spacing: str = ""):
+        """
+        Prints the current node and its left and right neighbors if they exists.
+
+        Args:
+            node (Node):
+                The current node we want to print.
+
+            spacing (str, optional):
+                The spaces to separate the depth of the decision tree
+        """
         # Base case: we've reached a leaf
         if isinstance(node, LeafNode):
             print(spacing + "Predict", node.y)
             return
 
         # Print the question at this node
-        print(spacing + str(node._question))
+        print(spacing + str(node.question))
 
         # Call this function recursively on the true branch
         print(spacing + '--> True:')
-        self.print_tree(node._branch_left, spacing + "  ")
+        self._print_tree(node.branch_left, spacing + "  ")
 
         # Call this function recursively on the false branch
         print(spacing + '--> False:')
-        self.print_tree(node._branch_right, spacing + "  ")
+        self._print_tree(node.branch_right, spacing + "  ")
+
+    def print_tree(self):
+        """
+        Prints the decision tree, starting from the root node.
+        """
+        self._print_tree(self._root)
 
 
 class DecisionTreeClassifier(DecisionTree):
@@ -305,19 +375,36 @@ class DecisionTreeClassifier(DecisionTree):
             The string argument to differentiate between different number of
             features to look for finding the best splits.
 
+        max_depth (int, optional):
+            The maximum depth of the decision tree. It is used for regularization
+            and prevents from overfitting.
+
+        min_samples_split (int, optional):
+            The minimum number of samples needed to generate a new decision node.
+            It is used for regularization and prevents from overfitting.
+
         random_state (int, optional):
             The seed for the random number generator (used for reproducibility).
     """
 
-
     def __init__(
             self,
-            splitter: str,
-            strategy: str,
-            max_features: str,
+            splitter: str = "weighted_entropy",
+            strategy: str = "best",
+            max_features: str = "all",
+            max_depth: Optional[int] = None,
+            min_samples_split: int = 2,
             random_state: Optional[int] = None,
     ):
-        super().__init__("classification", splitter, strategy, max_features, random_state)
+        super().__init__(
+            "classification",
+            splitter,
+            strategy,
+            max_features,
+            max_depth,
+            min_samples_split,
+            random_state
+        )
 
     def _get_splitter(self, splitter: str) -> Splitter:
         """
@@ -372,18 +459,36 @@ class DecisionTreeRegressor(DecisionTree):
             The string argument to differentiate between different number of
             features to look for finding the best splits.
 
+        max_depth (int, optional):
+            The maximum depth of the decision tree. It is used for regularization
+            and prevents from overfitting.
+
+        min_samples_split (int, optional):
+            The minimum number of samples needed to generate a new decision node.
+            It is used for regularization and prevents from overfitting.
+
         random_state (int, optional):
             The seed for the random number generator (used for reproducibility).
     """
 
     def __init__(
             self,
-            splitter: str,
-            strategy: str,
-            max_features: str,
+            splitter: str = "weighted_mse",
+            strategy: str = "best",
+            max_features: str = "all",
+            max_depth: Optional[int] = None,
+            min_samples_split: int = 2,
             random_state: Optional[int] = None,
     ):
-        super().__init__("regression", splitter, strategy, max_features, random_state)
+        super().__init__(
+            "regression",
+            splitter,
+            strategy,
+            max_features,
+            max_depth,
+            min_samples_split,
+            random_state,
+        )
 
     def _get_splitter(self, splitter: str) -> Splitter:
         """

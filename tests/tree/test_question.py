@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from PyDecisionTree.question import Question
+from PyDecisionTree.tree import Question
 
 
 class TestQuestion(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestQuestion(unittest.TestCase):
             [6, 3, 8],
         ])
         self.y = np.array([0, 1, 2])
-        self.question_continuous = Question(0, self.X[1, 0])
+        self.question_continuous = Question(0, float(self.X[1, 0]))
 
     def test_match(self):
         """
@@ -34,12 +34,12 @@ class TestQuestion(unittest.TestCase):
         """
         Tests the method partition().
         """
-        X_left_continuous, y_left_continuous, X_right_continuous, y_right_continuous = self.question_continuous.partition(self.X, self.y)
+        X_left_cont, y_left_cont, X_right_cont, y_right_cont = self.question_continuous.partition(self.X, self.y)
 
-        np.testing.assert_array_equal(self.X[1:], X_left_continuous)
-        np.testing.assert_array_equal(self.y[1:], y_left_continuous)
-        np.testing.assert_array_equal(self.X[:1], X_right_continuous)
-        np.testing.assert_array_equal(self.y[:1], y_right_continuous)
+        np.testing.assert_array_equal(self.X[1:], X_left_cont)
+        np.testing.assert_array_equal(self.y[1:], y_left_cont)
+        np.testing.assert_array_equal(self.X[:1], X_right_cont)
+        np.testing.assert_array_equal(self.y[:1], y_right_cont)
 
     def test_is_numeric(self):
         """

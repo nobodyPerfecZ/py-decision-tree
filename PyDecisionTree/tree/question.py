@@ -47,7 +47,7 @@ class Question:
             - categorical and value == the question value
 
         Args:
-            value (Any):
+            x (Any):
                 The value to check
 
         Returns:
@@ -84,7 +84,7 @@ class Question:
         """
         assert X.ndim == 2, f"Illegal X {X.ndim}. The dimension of X should be (N, ?)!"
 
-        # Vectorize the function to speedup the execution
+        # Vectorize the function to speed up the execution
         vectorized_match = np.vectorize(pyfunc=self._match)
 
         # Check which dtype should be used
